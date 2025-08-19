@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+     <style>
+    body {
+      margin: 0;
+      height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(to right, #d0a2f7, #a0c4ff);
+      font-family: Arial, sans-serif;
+    }
+
+    .contenedor {
+      background: white;
+      padding: 40px 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+      border: 2px solid #bfa2f7; /* Borde en tono lila pastel */
+      text-align: center;
+      width: 360px;
+    }
+
+    h1 {
+      color: #4a3f61;
+      margin-bottom: 30px;
+      font-size: 28px;
+    }
+
+    input[type="text"],
+    input[type="password"],
+    input[type="button"] {
+      display: block;
+      width: 100%;
+      margin: 12px auto;
+      padding: 16px;
+      font-size: 16px;
+      color: black;
+      background: white;
+      border: 1px solid #888;
+      border-radius: 6px;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    input[type="text"]::placeholder {
+      color: #666;
+    }
+
+    input[type="button"] {
+      margin-top: 25px;
+      background: linear-gradient(to right, #b46fe2, #4a90e2);
+      color: white;
+      font-weight: bold;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    input[type="button"]:hover {
+      background: linear-gradient(to right, #a359d1, #3f7cd1);
+    }
+  </style>
+</head>
+<body>
+     <div class="contenedor">
+    <h1>Registro</h1>
+    <input type="text" id="txt_nombre" placeholder="Escriba el nombre">
+    <br>
+    <input type="text" id="txt_email" placeholder="Escriba el email">
+    <br>
+    <input type="password" id="txt_password" placeholder="Escriba la clave">
+    <br>
+    <input type="button" value="Registrarse" onclick="registro()">
+    <br>
+    </div>
+    <script type="text/javascript">
+    function registro()
+    {
+    nombreinput = document.getElementById("txt_nombre").value;
+    emailinput = document.getElementById("txt_email").value;
+    passwordinput = document.getElementById("txt_password").value;
+    fetch('/api/usuarios', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nombre: nombreinput, email: emailinput, clave: passwordinput })
+    })
+    .then(response => response.json())
+    .then(data => {
+    console.log('Usuario creado:', data);
+    alert("Usuario creado")
+    });
+    }
+
+    
+ </script>
+</body>
+</html>

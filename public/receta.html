@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistema de Recetas de Cocina</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(to right, #ffe0b2, #ffccbc);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .contenedor {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.15);
+      width: 600px;
+      text-align: center;
+    }
+    h2 { color: #5d4037; margin-bottom: 20px; }
+    input, textarea, select {
+      width: 100%;
+      margin: 8px 0;
+      padding: 10px;
+      border: 1px solid #aaa;
+      border-radius: 6px;
+    }
+    button {
+      background: linear-gradient(to right, #ff7043, #ff5722);
+      color: white;
+      border: none;
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 6px;
+      width: 100%;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover { background: linear-gradient(to right, #e64a19, #d84315); }
+    table { width: 100%; margin-top: 20px; border-collapse: collapse; }
+    th, td { border: 1px solid #ddd; padding: 10px; text-align: center; }
+    th { background: #ffe0b2; }
+  </style>
+</head>
+<body>
+  <div class="contenedor">
+    <h2>Registrar Nueva Receta</h2>
+    <input type="text" id="nombre-receta" placeholder="Nombre de la receta" required>
+    <textarea id="descripcion-receta" placeholder="Descripción de la receta"></textarea>
+    <input type="text" id="ingredientes-receta" placeholder="Ingredientes separados por coma">
+    <button id="btn-guardar">Guardar Receta</button>
+    <button id="btn-modificar" style="display:none;">Modificar Receta</button>
+    <input type="hidden" id="receta-id">
+
+    <h2>Listado de Recetas</h2>
+    <table id="tabla-recetas">
+      <thead>
+        <tr>
+          <th>Nombre</th>
+          <th>Descripción</th>
+          <th>Ingredientes</th>
+          
+          
+        </tr>
+      </thead>
+      <tbody></tbody>
+    </table>
+  </div>
+
+  <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+  <script>
+    const btnGuardar = document.getElementById('btn-guardar');
+    const btnModificar = document.getElementById('btn-modificar');
+    const recetaIdInput = document.getElementById('receta-id');
+
+    // Crear Receta
+    btnGuardar.addEventListener('click', async () => {
+      const receta = {
+        nombre: document.getElementById('nombre-receta').value,
+        descripcion: document.getElementById('descripcion-receta').value,
+        ingredientes: document.getElementById('ingredientes-receta').value.split(",").map(i => i.trim())
+      };
+      const resp = await fetch('/api/recetas', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+        body: JSON.stringify(receta)
+      });
+      await resp.json();
+      cargarTabla();
+      limpiarFormulario();
+    });
+
+    // Modificar Receta
+    btnModificar.addEventListener('click', async () => {
+      const receta = {
+        nombre: document.getElementById('nombre-receta').value,
+        descripcion: document.getElementById('descripcion-receta').value,
+        ingredientes: document.getElementById('ingredientes-receta').value.split(",").map(i => i.trim())
+      };
+      const id = recetaIdInput.value;
+      const resp = await fetch(`/api/recetas/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + localStorage.getItem('token') },
+        body: JSON.stringify(receta)
+      });
+      await resp.json();
+      cargarTabla();
+      limpiarFormulario();
+    });
+
+    async function votarReceta(id) {
+      await fetch(`/api/recetas/${id}/votar`, {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+      });
+      cargarTabla();
+    }
+
+    async function editarReceta(id) {
+      const resp = await fetch(`/api/recetas/${id}`, {
+        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+      });
+      const r = await resp.json();
+      document.getElementById('nombre-receta').value = r.nombre;
+      document.getElementById('descripcion-receta').value = r.descripcion;
+      document.getElementById('ingredientes-receta').value = r.ingredientes.join(", ");
+      recetaIdInput.value = r._id;
+      btnGuardar.style.display = "none";
+      btnModificar.style.display = "inline";
+    }
+
+    async function eliminarReceta(id) {
+      if (!confirm('¿Seguro deseas eliminar esta receta?')) return;
+      await fetch(`/api/recetas/${id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+      });
+      cargarTabla();
+    }
+
+    function limpiarFormulario() {
+      document.getElementById('nombre-receta').value = "";
+      document.getElementById('descripcion-receta').value = "";
+      document.getElementById('ingredientes-receta').value = "";
+      recetaIdInput.value = "";
+      btnGuardar.style.display = "inline";
+      btnModificar.style.display = "none";
+    }
+
+    async function cargarTabla() {
+      const resp = await fetch('/api/recetas', {
+        headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+      });
+      const recetas = await resp.json();
+      const tbody = document.querySelector('#tabla-recetas tbody');
+      tbody.innerHTML = "";
+      recetas.forEach(r => {
+        const fila = `
+          <tr>
+            <td>${r.nombre}</td>
+            <td>${r.descripcion}</td>
+            <td>${r.ingredientes.join(", ")}</td>
+            
+            <td>
+              
+              <button onclick='editarReceta("${r._id}")'>Editar</button>
+              <button onclick='eliminarReceta("${r._id}")'>Eliminar</button>
+            </td>
+          </tr>
+        `;
+        tbody.innerHTML += fila;
+      });
+    }
+
+    // Inicializar
+    cargarTabla();
+  </script>
+</body>
+</html>
