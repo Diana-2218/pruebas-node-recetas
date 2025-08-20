@@ -65,6 +65,7 @@
           <th>Nombre</th>
           <th>Descripción</th>
           <th>Ingredientes</th>
+          <th>Creador</th>
           
           
         </tr>
@@ -160,15 +161,22 @@
       const recetas = await resp.json();
       const tbody = document.querySelector('#tabla-recetas tbody');
       tbody.innerHTML = "";
+    console.log(recetas);
       recetas.forEach(r => {
+        // Determinar el nombre del creador
+        let creador = 'Desconocido';
+        if (r.creador && typeof r.creador === 'object') {
+          creador = r.creador.nombre;
+        } else if (typeof r.creador === 'string') {
+          creador = r.creador;
+        }
         const fila = `
           <tr>
             <td>${r.nombre}</td>
             <td>${r.descripcion}</td>
             <td>${r.ingredientes.join(", ")}</td>
-            
+            <td>${creador}</td>
             <td>
-              
               <button onclick='editarReceta("${r._id}")'>Editar</button>
               <button onclick='eliminarReceta("${r._id}")'>Eliminar</button>
             </td>

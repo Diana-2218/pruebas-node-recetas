@@ -1,7 +1,7 @@
-const { Schema, model } = require('mongoose');
+const { Schema, model, Types} = require('mongoose');
 
 const RecetaSchema = new Schema({
-  creador: String,   // Nombre o correo del creador
+  creador: {type: Types.ObjectId, ref:"Usuario",required:true},   // Nombre o correo del creador
   nombre: String,    // Nombre de la receta
   descripcion: String, // Descripción de la receta
   ingredientes: [String], // Lista de ingredientes en texto

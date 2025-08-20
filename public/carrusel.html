@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Carrusel de Recetas</title>
+<style>
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: linear-gradient(to right, #ffd6a5, #fdffb6);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 2rem 0;
+}
+
+.titulo-carrusel {
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin: 2rem 0 2.5rem;
+  text-align: center;
+  color: #4a3f61;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.1);
+}
+
+.carousel {
+  display: flex;
+  flex-direction: row;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+  justify-content: flex-start;
+  padding: 0 2rem 1rem 2rem;
+  max-width: 90vw;
+  margin: 0 auto;
+  border-bottom: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.card {
+  flex-shrink: 0;
+  flex-basis: 260px;
+  scroll-snap-align: start;
+  margin: 0 1.25rem;
+  border: 1px solid #ccc;
+  border-radius: 12px;
+  padding: 1.5rem;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 8px 16px rgba(0,0,0,0.15);
+}
+
+.card:first-child { margin-left: 1.25rem; }
+.card:last-child { margin-right: 1.25rem; }
+
+.nombre-receta { font-size: 1.2rem; font-weight: 700; color: #4a3f61; margin-bottom: 0.5rem; }
+.descripcion { font-size: 0.95rem; color: #444; margin-bottom: 0.5rem; }
+.ingredientes { font-size: 0.9rem; color: #555; margin-bottom: 0.5rem; }
+.creador { font-size: 0.9rem; color: #777; margin-bottom: 0.5rem; }
+.calificacion { font-size: 0.95rem; color: #444; margin-bottom: 0.5rem; }
+
+.botones-reaccion button {
+  margin: 0.3rem 0.5rem 0 0;
+  padding: 0.5rem 0.9rem;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 0.9rem;
+  transition: background-color 0.3s ease;
+}
+.btn-like { background-color: #6fcf97; color: white; }
+.btn-like:hover { background-color: #57b37f; }
+.btn-dislike { background-color: #f88379; color: white; }
+.btn-dislike:hover { background-color: #e6675c; }
+</style>
+</head>
+<body>
+<h2 class="titulo-carrusel">Recetas destacadas</h2>
+<div class="carousel" id="carousel"></div>
+
+<script>
+function generarEstrellas(valor) {
+  const estrellas = '⭐'.repeat(Math.max(0, Math.round(valor)));
+  return `${estrellas} (${valor.toFixed(1)})`;
+}
+
+async function loadRecetas() {
+  try {
+    const resp = await fetch('/api/recetas', {
+      method: 'GET',
+      headers: { 'Authorization': 'Bearer ' + localStorage.getItem('token') }
+    });
+    const recetas = await resp.json();
+
+    const contenedor = document.getElementById('carousel');
+    contenedor.innerHTML = '';
+
+    recetas.forEach(r => {
+      const creador = (r.creador && typeof r.creador === 'object') 
+                      ? (r.creador.nombre || r.creador.correo || 'Usuario')
+                      : (typeof r.creador === 'string' ? r.creador : 'Desconocido');
+
+      const calificacion = typeof r.calificacion === 'number' ? r.calificacion : 0;
+
+      const card = document.createElement('div');
+      card.classList.add('card');
+      card.innerHTML = `
+        <div class="nombre-receta">${r.nombre}</div>
+        <div class="descripcion">${r.descripcion}</div>
+        <div class="ingredientes"><b>Ingredientes:</b> ${r.ingredientes?.join(', ') || 'N/A'}</div>
+        <div class="creador"><b>Creador:</b> ${creador}</div>
+        <div class="calificacion"><b>Calificación:</b> ${generarEstrellas(calificacion)}</div>
+        <div class="botones-reaccion">
+          <button class="btn-like" onclick="votarReceta('${r._id}', 1)">Me gusta</button>
+          <button class="btn-dislike" onclick="votarReceta('${r._id}', -1)">No me gusta</button>
+        </div>
+      `;
+      contenedor.appendChild(card);
+    });
+
+  } catch (error) {
+    console.error('Error al cargar recetas:', error);
+  }
+}
+
+async function votarReceta(id, valor) {
+  try {
+    const resp = await fetch(`/api/recetas/recetas/vota/${id}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + localStorage.getItem('token')
+      },
+      body: JSON.stringify({ calificacion: Number(valor) })
+    });
+    if (!resp.ok) throw new Error('Error al enviar voto');
+    console.log(`Voto enviado para receta ${id}: ${valor}`);
+    await loadRecetas(); // recarga para actualizar la calificación
+  } catch (error) {
+    console.error('Error votando receta:', error);
+  }
+}
+
+// cargar recetas al iniciar
+loadRecetas();
+</script>
+</body>
+</html>

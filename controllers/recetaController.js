@@ -1,10 +1,29 @@
 const Receta = require('../models/receta');
-
+const Usuario = require('../models/Usuario');
 
 exports.getRecetas = async (req, res) => {
   try {
     const recetas = await Receta.find();
-    res.json(recetas);
+     const recetasConUsuario = await Promise.all(
+    recetas.map(async (c) => {
+    try {
+      // Buscar al usuario por ID (c.creador) y seleccionar solo nombre y correo
+      const usuario = await Usuario.findById(c.creador).select('nombre correo');
+      return {
+        ...c.toObject(),        // Convertir el documento de Mongoose a objeto plano JS
+        creador: usuario || null // Reemplazar el campo 'creador' con los datos del usuario (o null si no se encontró)
+      };
+    } catch (error) {
+      // En caso de error al buscar usuario, devolvemos la camiseta con 'creador' null
+      return {
+        ...c.toObject(),
+        creador: null
+      };
+    }
+  })
+);
+console.log(recetasConUsuario);
+    res.json(recetasConUsuario);
     // Enriquecer cada receta con datos del usuario creador:
   } catch (error) {
     res.status(500).json({ error: 'Error del servidor' });
@@ -24,6 +43,7 @@ exports.getRecetaById = async (req, res) => {
 exports.createReceta = async (req, res) => {
   try {
     const nuevaReceta = new Receta(req.body);
+    nuevaReceta.creador = req.usuarioId;
     const recetaGuardada = await nuevaReceta.save();
     res.status(201).json(recetaGuardada);
 
@@ -46,6 +66,39 @@ exports.updateReceta = async (req, res) => {
     res.status(400).json({ error: 'Error al actualizar receta' });
   }
 };
+
+// Ejemplo de implementación en Node/Express para recetas
+exports.calificarReceta = async (req, res) => {
+  const id = req.params.id;
+  let { calificacion } = req.body; // calificacion será 1 o -1 según voto
+
+  try {
+    calificacion = Number(calificacion); // convertir a número
+    if (isNaN(calificacion) || ![1, -1].includes(calificacion)) {
+      return res.status(400).json({ error: 'Valor de calificación inválido' });
+    }
+
+    const receta = await Receta.findById(id);
+    if (!receta) {
+      return res.status(404).json({ error: 'Receta no encontrada' });
+    }
+
+    if (typeof receta.calificacion !== 'number') {
+      receta.calificacion = 0;
+    }
+console.log(receta)
+    receta.calificacion += calificacion;
+    await receta.save();
+
+    return res.json(receta);
+
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Error de servidor' });
+  }
+};
+
+
 
 exports.deleteReceta = async (req, res) => {
   try {
