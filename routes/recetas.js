@@ -4,6 +4,7 @@ const recetaController = require('../controllers/recetaController');
 const { verificarToken } = require('../seguridad/auth');
 
 router.get('/', verificarToken, recetaController.getRecetas);
+router.get('/ordenadoporcalificacion', verificarToken, recetaController.getRecetasorderbycalificacion);
 router.get('/:id', verificarToken, recetaController.getRecetaById);
 router.post('/', verificarToken, recetaController.createReceta);
 router.put('/:id', verificarToken, recetaController.updateReceta);

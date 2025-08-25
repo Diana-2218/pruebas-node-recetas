@@ -30,6 +30,35 @@ console.log(recetasConUsuario);
   }
 };
 
+exports.getRecetasorderbycalificacion = async (req, res) => {
+  try {
+    const recetas = await Receta.find().sort({ calificacion: -1 });
+     const recetasConUsuario = await Promise.all(
+    recetas.map(async (c) => {
+    try {
+      // Buscar al usuario por ID (c.creador) y seleccionar solo nombre y correo
+      const usuario = await Usuario.findById(c.creador).select('nombre correo');
+      return {
+        ...c.toObject(),        // Convertir el documento de Mongoose a objeto plano JS
+        creador: usuario || null // Reemplazar el campo 'creador' con los datos del usuario (o null si no se encontró)
+      };
+    } catch (error) {
+      // En caso de error al buscar usuario, devolvemos la camiseta con 'creador' null
+      return {
+        ...c.toObject(),
+        creador: null
+      };
+    }
+  })
+);
+console.log(recetasConUsuario);
+    res.json(recetasConUsuario);
+    // Enriquecer cada receta con datos del usuario creador:
+  } catch (error) {
+    res.status(500).json({ error: 'Error del servidor' });
+  }
+};
+
 exports.getRecetaById = async (req, res) => {
   try {
     const receta = await Receta.findById(req.params.id);
